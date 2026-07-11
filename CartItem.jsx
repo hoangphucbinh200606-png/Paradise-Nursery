@@ -1,57 +1,56 @@
-import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { removeItem, updateQuantity } from './CartSlice';
-import './CartItem.css';
+import { createSlice } from '@reduxjs/toolkit';
 
-const CartItem = ({ onContinueShopping }) => {
-  const cart = useSelector(state => state.cart.cartItems);
-  const dispatch = useDispatch();
+const initialState = {
+  cartItems: [],
+  totalQuantity: 0,
+};
 
-  // Calculate total amount for all products in the cart
-  const calculateTotalAmount = () => {
-    let totalAmount = 0;
-    cart.forEach((item) => {
-      totalAmount += item.price * item.quantity;
-    });
-    return totalAmount;
-  };
-
-  const handleContinueShopping = (e) => {
-    e.preventDefault();
-    if (onContinueShopping) {
-      onContinueShopping();
+const CartSlice = createSlice({
+  name: 'cart',
+  initialState,
+  reducers: {
+    addItem: (state, action) => {
+      const newItem = action.payload;
+      const existingItem = state.cartItems.find(item => item.id === newItem.id);
+      
+      state.totalQuantity++;
+      
+      if (!existingItem) {
+        state.cartItems.push({
+          id: newItem.id,
+          name: newItem.name,
+          price: newItem.price,
+          thumbnail: newItem.thumbnail,
+          quantity: 1,
+        });
+      } else {
+        existingItem.quantity++;
+      }
+    },
+    // THIS IS REQUIRED FOR THE DELETE BUTTON
+    removeItem: (state, action) => {
+      const id = action.payload;
+      const existingItem = state.cartItems.find(item => item.id === id);
+      
+      if (existingItem) {
+        state.totalQuantity -= existingItem.quantity;
+        state.cartItems = state.cartItems.filter(item => item.id !== id);
+      }
+    },
+    // THIS IS REQUIRED FOR THE + AND - BUTTONS TO WORK DYNAMICALLY
+    updateQuantity: (state, action) => {
+      const { id, quantity } = action.payload;
+      const itemToUpdate = state.cartItems.find(item => item.id === id);
+      
+      if (itemToUpdate) {
+        const quantityDifference = quantity - itemToUpdate.quantity;
+        state.totalQuantity += quantityDifference;
+        itemToUpdate.quantity = quantity;
+      }
     }
-  };
+  }
+});
 
-  const handleIncrement = (item) => {
-    dispatch(updateQuantity({ id: item.id, quantity: item.quantity + 1 }));
-  };
-
-  const handleDecrement = (item) => {
-    if (item.quantity > 1) {
-      dispatch(updateQuantity({ id: item.id, quantity: item.quantity - 1 }));
-    } else {
-      // If quantity is 1 and they decrement, remove the item completely
-      dispatch(removeItem(item.id));
-    }
-  };
-
-  const handleRemove = (item) => {
-    dispatch(removeItem(item.id));
-  };
-
-  // Calculate total cost based on quantity for an individual item
-  const calculateTotalCost = (item) => {
-    return item.price * item.quantity;
-  };
-
-  const handleCheckoutShopping = (e) => {
-    alert('Functionality to be added for future reference');
-  };
-
-  return (
-    <div className="cart-container">
-      <h2 style={{ color: 'black' }}>Total Cart Amount: ${calculateTotalAmount()}</h2>
-      <div>
-        {cart.map(item => (
-          <div className="cart-item" key={
+// MAKE SURE ALL THREE ARE EXPORTED HERE
+export const { addItem, removeItem, updateQuantity } = CartSlice.actions;
+export default CartSlice.reducer;
