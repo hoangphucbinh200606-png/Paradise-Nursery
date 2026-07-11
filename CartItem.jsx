@@ -1,56 +1,83 @@
-import { createSlice } from '@reduxjs/toolkit';
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { removeItem, updateQuantity } from './CartSlice';
+import './CartItem.css';
 
-const initialState = {
-  cartItems: [],
-  totalQuantity: 0,
+const CartItem = ({ onContinueShopping }) => {
+  const cart = useSelector(state => state.cart.cartItems);
+  const dispatch = useDispatch();
+
+  // Calculate total amount for all products in the cart
+  const calculateTotalAmount = () => {
+    let totalAmount = 0;
+    cart.forEach((item) => {
+      totalAmount += item.price * item.quantity;
+    });
+    return totalAmount;
+  };
+
+  const handleContinueShopping = (e) => {
+    e.preventDefault();
+    if (onContinueShopping) {
+      onContinueShopping();
+    }
+  };
+
+  const handleIncrement = (item) => {
+    dispatch(updateQuantity({ id: item.id, quantity: item.quantity + 1 }));
+  };
+
+  const handleDecrement = (item) => {
+    if (item.quantity > 1) {
+      dispatch(updateQuantity({ id: item.id, quantity: item.quantity - 1 }));
+    } else {
+      // If quantity is 1 and they decrement, remove the item completely
+      dispatch(removeItem(item.id));
+    }
+  };
+
+  const handleRemove = (item) => {
+    dispatch(removeItem(item.id));
+  };
+
+  // Calculate total cost based on quantity for an individual item
+  const calculateTotalCost = (item) => {
+    return item.price * item.quantity;
+  };
+
+  const handleCheckoutShopping = (e) => {
+    alert('Functionality to be added for future reference');
+  };
+
+  return (
+    <div className="cart-container">
+      <h2 style={{ color: 'black' }}>Total Cart Amount: ${calculateTotalAmount()}</h2>
+      <div>
+        {cart.map(item => (
+          <div className="cart-item" key={item.id}>
+            <img className="cart-item-image" src={item.thumbnail || `https://via.placeholder.com/150?text=${item.name}`} alt={item.name} />
+            <div className="cart-item-details">
+              <div className="cart-item-name">{item.name}</div>
+              <div className="cart-item-cost">Price: ${item.price}</div>
+              <div className="cart-item-quantity">
+                <button className="cart-item-button cart-item-button-dec" onClick={() => handleDecrement(item)}>-</button>
+                <span className="cart-item-quantity-value">{item.quantity}</span>
+                <button className="cart-item-button cart-item-button-inc" onClick={() => handleIncrement(item)}>+</button>
+              </div>
+              <div className="cart-item-total">Total: ${calculateTotalCost(item)}</div>
+              <button className="cart-item-delete" onClick={() => handleRemove(item)}>Delete</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: '20px', color: 'black' }} className='total_cart_amount'></div>
+      <div className="continue_shopping_btn">
+        <button className="get-started-btn" onClick={(e) => handleContinueShopping(e)}>Continue Shopping</button>
+        <br />
+        <button className="get-started-btn1" onClick={(e) => handleCheckoutShopping(e)}>Checkout</button>
+      </div>
+    </div>
+  );
 };
 
-const CartSlice = createSlice({
-  name: 'cart',
-  initialState,
-  reducers: {
-    addItem: (state, action) => {
-      const newItem = action.payload;
-      const existingItem = state.cartItems.find(item => item.id === newItem.id);
-      
-      state.totalQuantity++;
-      
-      if (!existingItem) {
-        state.cartItems.push({
-          id: newItem.id,
-          name: newItem.name,
-          price: newItem.price,
-          thumbnail: newItem.thumbnail,
-          quantity: 1,
-        });
-      } else {
-        existingItem.quantity++;
-      }
-    },
-    // THIS IS REQUIRED FOR THE DELETE BUTTON
-    removeItem: (state, action) => {
-      const id = action.payload;
-      const existingItem = state.cartItems.find(item => item.id === id);
-      
-      if (existingItem) {
-        state.totalQuantity -= existingItem.quantity;
-        state.cartItems = state.cartItems.filter(item => item.id !== id);
-      }
-    },
-    // THIS IS REQUIRED FOR THE + AND - BUTTONS TO WORK DYNAMICALLY
-    updateQuantity: (state, action) => {
-      const { id, quantity } = action.payload;
-      const itemToUpdate = state.cartItems.find(item => item.id === id);
-      
-      if (itemToUpdate) {
-        const quantityDifference = quantity - itemToUpdate.quantity;
-        state.totalQuantity += quantityDifference;
-        itemToUpdate.quantity = quantity;
-      }
-    }
-  }
-});
-
-// MAKE SURE ALL THREE ARE EXPORTED HERE
-export const { addItem, removeItem, updateQuantity } = CartSlice.actions;
-export default CartSlice.reducer;
+export default CartItem;
